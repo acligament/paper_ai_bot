@@ -1,0 +1,48 @@
+name: Daily Paper Video Bot
+
+on:
+  schedule:
+    - cron: "0 22 * * *"  # 日本時間 7:00
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick ffmpeg
+
+          pip install --upgrade pip
+          pip install feedparser requests pymupdf pillow moviepy openai
+
+      - name: Start VOICEVOX Engine
+        run: |
+          docker pull voicevox/voicevox_engine:cpu-latest
+          docker run -d --name voicevox -p 50021:50021 voicevox/voicevox_engine:cpu-latest
+          sleep 10
+
+      - name: Check VOICEVOX speakers
+        run: |
+          curl -s http://localhost:50021/speakers
+
+      - name: Run bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python paper_voice_bot.py
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-video-outputs
+          path: outputs
