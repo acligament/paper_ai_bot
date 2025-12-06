@@ -10,14 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------
+      # リポジトリ取得
+      # --------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --------------------------------
+      # Python セットアップ
+      # --------------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # --------------------------------
+      # 必要なライブラリをインストール
+      # --------------------------------
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -26,21 +35,34 @@ jobs:
           pip install --upgrade pip
           pip install feedparser requests pymupdf pillow moviepy openai
 
+      # --------------------------------
+      # VOICEVOX エンジン起動
+      # --------------------------------
       - name: Start VOICEVOX Engine
         run: |
           docker pull voicevox/voicevox_engine:cpu-latest
           docker run -d --name voicevox -p 50021:50021 voicevox/voicevox_engine:cpu-latest
           sleep 10
 
-      - name: Check VOICEVOX speakers
+      # --------------------------------
+      # デバッグ（ファイル一覧）
+      # --------------------------------
+      - name: Debug file list
         run: |
-          curl -s http://localhost:50021/speakers
+          pwd
+        ls -R .
 
+      # --------------------------------
+      # Bot 実行
+      # --------------------------------
       - name: Run bot
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python paper_voice_bot.py
 
+      # --------------------------------
+      # 成果物アップロード
+      # --------------------------------
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
