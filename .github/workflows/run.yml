@@ -2,7 +2,7 @@ name: Daily Paper Movie Bot (Gemini)
 
 on:
   schedule:
-    - cron: "0 22 * * *"   # 日本時間 7:00 実行
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,32 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # コード取得
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Python セットアップ
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 必要ライブラリのインストール
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg   # moviepy に必要
+          sudo apt-get install -y ffmpeg
           sudo apt-get install -y fonts-ipafont-gothic
           pip install --upgrade pip
           pip install feedparser requests pymupdf pillow moviepy google-generativeai
 
-      # GEMINI_API_KEY を使ってスクリプト実行
       - name: Run script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python paper_voice_bot.py
+        run: |
+          echo "Python version:"
+          python --version
+          echo "Installed moviepy:"
+          pip show moviepy || echo "moviepy NOT installed"
+          python paper_voice_bot.py
 
-      # 動画ファイルの保存
       - name: Upload output artifacts
         uses: actions/upload-artifact@v4
         with:
