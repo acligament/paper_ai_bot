@@ -1,8 +1,8 @@
-name: Daily Paper Video Bot
+name: Daily Paper Movie Bot (Gemini)
 
 on:
   schedule:
-    - cron: "0 22 * * *"  # 日本時間 7:00
+    - cron: "0 22 * * *"   # 日本時間 7:00 実行
   workflow_dispatch:
 
 jobs:
@@ -10,48 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # コード取得
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Python セットアップ
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # 必要ライブラリのインストール
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y imagemagick ffmpeg
-
+          sudo apt-get install -y ffmpeg   # moviepy に必要
+          sudo apt-get install -y fonts-ipafont-gothic
           pip install --upgrade pip
-          pip install feedparser requests pymupdf pillow openai
+          pip install feedparser requests pymupdf pillow moviepy google-generativeai
 
-          # moviepy と依存パッケージを確実に入れる
-          pip install av
-          pip install --upgrade --force-reinstall moviepy
-
-          # デバッグ：moviepy がインストールされているか確認
-          pip show moviepy
-          pip show av
-
-      - name: Start VOICEVOX Engine
-        run: |
-          docker pull voicevox/voicevox_engine:cpu-latest
-          docker run -d --name voicevox -p 50021:50021 voicevox/voicevox_engine:cpu-latest
-          sleep 10
-
-      - name: Debug file list
-        run: |
-          pwd
-          ls -R .
-
-      - name: Run bot
+      # GEMINI_API_KEY を使ってスクリプト実行
+      - name: Run script
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python paper_voice_bot.py
 
-      - name: Upload outputs
+      # 動画ファイルの保存
+      - name: Upload output artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: paper-video-outputs
+          name: paper-movie
           path: outputs
