@@ -35,7 +35,6 @@ jobs:
           MAX_PAPERS: "3"
           SLIDE_SECONDS: "4"
         run: |
-          cd paper_ai_bot
           python main.py
 
       - name: Upload outputs
