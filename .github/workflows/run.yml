@@ -31,13 +31,8 @@ jobs:
       - name: Run script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_BASE: "https://generativelanguage.googleapis.com"
-          GEMINI_API_VERSION: "v1beta"
-          GEMINI_MODEL: "gemini-2.5-flash"   # ←存在しない場合はコードがListModelsで自動フォールバックします
-          MAX_PAPERS: "3"
-          SLIDE_SECONDS: "4"
         run: |
-          python paper_ai_bot/main.py
+          python main.py
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
