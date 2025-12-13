@@ -23,7 +23,7 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 # 設定（環境変数で上書き可）
 # -----------------------------
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")  # 例：gemini-1.5-flash
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "models/gemini-1.0-pro")  # 例：gemini-1.5-flash
 MAX_PAPERS = int(os.environ.get("MAX_PAPERS", "3"))
 SLIDE_SECONDS = float(os.environ.get("SLIDE_SECONDS", "4"))
 TTS_LANG = os.environ.get("TTS_LANG", "ja")  # gTTS: "ja"
