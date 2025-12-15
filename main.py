@@ -329,7 +329,7 @@ def main():
     print(summary)
 
     # slides + scripts（← 新）
-    slide_files, slide_scripts = build_slides_with_scripts(title, summary)
+    slide_files= build_slides(title, summary)
 
     # narration per slide（← 新）
     audio_files = generate_slide_audios(slide_scripts)
