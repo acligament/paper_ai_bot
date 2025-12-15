@@ -57,6 +57,19 @@ def clamp_text(text: str, max_chars: int) -> str:
         return text
     return text[:max_chars] + "…"
 
+def keep_only_bullets(text: str) -> str:
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    bullets = []
+    for l in lines:
+        if l.startswith(("-", "・", "*")):
+            l = l.lstrip("*").strip()
+            if l.startswith("・"):
+                l = "- " + l[1:].strip()
+            elif l.startswith("-"):
+                l = "- " + l[1:].strip()
+            bullets.append(l)
+    return "\n".join(bullets[:3])
+
 # -----------------------------
 # 1) arXiv fetch
 # -----------------------------
@@ -111,6 +124,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
 # -----------------------------
 # 4) Gemini REST (ListModels + fallback)
 # -----------------------------
+
 def gemini_list_models():
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY is empty. Set it via GitHub Actions Secret.")
@@ -182,10 +196,10 @@ def gemini_generate_content(prompt: str, model_name: str) -> str:
         return json.dumps(data)[:800]
 
 def gemini_summarize_ja(paper_text: str, title: str) -> str:
-    # 長文対策：先頭だけ（PDF全文は長すぎて失敗しやすい）
+    # 長文対策：先頭だけ
     paper_text = paper_text[:12000]
 
-prompt = f"""
+    prompt = f"""
 あなたは日本語が得意なAI研究者です。
 次の論文の内容を、日本語で短く要約してください。
 
@@ -194,8 +208,7 @@ prompt = f"""
 - 箇条書きは「- 」で始める
 - 3点以内
 - 各点は最大35文字
-- 前置き/挨拶/説明/「わかりました」等は一切書かない
-- 余計な行（空行やタイトル行）も不要
+- 前置き・挨拶・説明文は禁止
 
 タイトル:
 {title}
@@ -206,7 +219,11 @@ prompt = f"""
 
     chosen = pick_working_model(GEMINI_MODEL)
     print(f"🧠 Summarizing by Gemini (REST) using model: {chosen}")
-    return gemini_generate_content(prompt, chosen).strip()
+
+    raw = gemini_generate_content(prompt, chosen).strip()
+    clean = keep_only_bullets(raw)
+
+    return clean if clean else raw
 
 # -----------------------------
 # 5) TTS (gTTS) + speed up by ffmpeg
