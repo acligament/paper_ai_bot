@@ -263,84 +263,14 @@ def generate_slide_audios(slide_scripts):
 # 6) Slide text & image
 # -----------------------------
 
-def build_slides(title: str, summary: str, pdf_path: str):
-    bullets = [s.strip(" -・") for s in summary.split("\n") if s.strip()]
-    while len(bullets) < 3:
-        bullets.append("（要点なし）")
-
-    # PDFサムネイル
-    thumb = extract_pdf_thumbnail(pdf_path, "thumbnail.png")
-
-    slides = []
-
-    # 表紙
-    slides.append(
-        create_cover_slide(title, thumb, "slide_00_cover.png")
-    )
-
-    slide_texts = [
-        f"POINT 1\n{bullets[0]}",
-        f"POINT 2\n{bullets[1]}",
-        f"POINT 3\n{bullets[2]}",
-        "END\nありがとうございました",
-    ]
-
-    for i, s in enumerate(slide_texts, 1):
-        slides.append(create_slide_image(s, f"slide_{i:02d}.png"))
-
-    return slides
-
-def build_script(title: str, summary: str) -> str:
-    # 読み上げ用に軽く整形
-    summary = summary.replace("*", "").replace("#", "").strip()
-    return f"本日の論文紹介です。{title}。要点は次のとおりです。{summary}。以上です。"
-
-def create_slide_image(lines: str, out_png: str) -> str:
-    W, H = 1920, 1080
-    img = Image.new("RGB", (W, H), color="white")
-    draw = ImageDraw.Draw(img)
-
-    title_font = pick_font(64)
-    body_font = pick_font(50)
-
-    # ざっくり：1行目=タイトル、以降=本文
-    parts = lines.split("\n", 1)
-    title = parts[0].strip()
-    body = parts[1].strip() if len(parts) > 1 else ""
-
-    # wrap
-    title_wrapped = "\n".join(textwrap.wrap(title, width=22))
-    body_wrapped = "\n".join(textwrap.wrap(body, width=34))
-
-    x = 120
-    y = 120
-
-    draw.multiline_text((x, y), title_wrapped, fill="black", font=title_font, spacing=12)
-    y += 220
-    draw.multiline_text((x, y), body_wrapped, fill="black", font=body_font, spacing=18)
-
+def extract_pdf_thumbnail(pdf_path: str, out_png: str) -> str:
+    doc = fitz.open(pdf_path)
+    page = doc.load_page(0)
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
     path = os.path.join(SAVE_DIR, out_png)
-    img.save(path)
+    pix.save(path)
     return path
 
-def build_slides(title: str, summary: str, pdf_path: str):
-    # 5枚に分割（シンプル版）
-    bullets = [s.strip(" -・") for s in summary.split("\n") if s.strip()]
-    while len(bullets) < 3:
-        bullets.append("（要点なし）")
-
-    slide_texts = [
-        f"TITLE\n{title}",
-        f"POINT 1\n{bullets[0]}",
-        f"POINT 2\n{bullets[1]}",
-        f"POINT 3\n{bullets[2]}",
-        "END\nありがとうございました",
-    ]
-
-    slide_files = []
-    for i, s in enumerate(slide_texts, 1):
-        slide_files.append(create_slide_image(s, f"slide_{i:02d}.png"))
-    return slide_files
 
 def create_cover_slide(title: str, thumbnail_path: str, out_png: str) -> str:
     W, H = 1920, 1080
@@ -349,12 +279,10 @@ def create_cover_slide(title: str, thumbnail_path: str, out_png: str) -> str:
 
     title_font = pick_font(64)
 
-    # サムネイル配置
     thumb = Image.open(thumbnail_path).convert("RGB")
     thumb.thumbnail((900, 900))
     img.paste(thumb, (100, 150))
 
-    # タイトル
     title_wrapped = "\n".join(textwrap.wrap(title, 28))
     draw.multiline_text(
         (1050, 300),
@@ -367,6 +295,47 @@ def create_cover_slide(title: str, thumbnail_path: str, out_png: str) -> str:
     path = os.path.join(SAVE_DIR, out_png)
     img.save(path)
     return path
+
+
+def create_slide_image(lines: str, out_png: str) -> str:
+    W, H = 1920, 1080
+    img = Image.new("RGB", (W, H), color="white")
+    draw = ImageDraw.Draw(img)
+
+    title_font = pick_font(64)
+    body_font = pick_font(50)
+
+    parts = lines.split("\n", 1)
+    title = parts[0].strip()
+    body = parts[1].strip() if len(parts) > 1 else ""
+
+    title_wrapped = "\n".join(textwrap.wrap(title, width=22))
+    body_wrapped = "\n".join(textwrap.wrap(body, width=34))
+
+    draw.multiline_text((120, 120), title_wrapped, fill="black", font=title_font, spacing=12)
+    draw.multiline_text((120, 340), body_wrapped, fill="black", font=body_font, spacing=18)
+
+    path = os.path.join(SAVE_DIR, out_png)
+    img.save(path)
+    return path
+
+
+def build_slides(title: str, summary: str, pdf_path: str):
+    bullets = [s.strip(" -・") for s in summary.split("\n") if s.strip()]
+    while len(bullets) < 3:
+        bullets.append("（要点なし）")
+
+    thumb = extract_pdf_thumbnail(pdf_path, "thumbnail.png")
+
+    slides = [
+        create_cover_slide(title, thumb, "slide_00_cover.png"),
+        create_slide_image(f"POINT 1\n{bullets[0]}", "slide_01.png"),
+        create_slide_image(f"POINT 2\n{bullets[1]}", "slide_02.png"),
+        create_slide_image(f"POINT 3\n{bullets[2]}", "slide_03.png"),
+        create_slide_image("END\nありがとうございました", "slide_04.png"),
+    ]
+
+    return slides
 
 # -----------------------------
 # 7) Video
