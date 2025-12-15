@@ -323,7 +323,7 @@ def create_slide_image(lines: str, out_png: str) -> str:
     img.save(path)
     return path
 
-def build_slides(title: str, summary: str):
+def build_slides(title: str, summary: str, pdf_path: str):
     # 5枚に分割（シンプル版）
     bullets = [s.strip(" -・") for s in summary.split("\n") if s.strip()]
     while len(bullets) < 3:
