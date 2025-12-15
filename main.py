@@ -121,6 +121,14 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         chunks.append(page.get_text())
     return "\n".join(chunks)
 
+def extract_pdf_thumbnail(pdf_path: str, out_png: str) -> str:
+    doc = fitz.open(pdf_path)
+    page = doc.load_page(0)  # 1ページ目
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 高解像度
+    out_path = os.path.join(SAVE_DIR, out_png)
+    pix.save(out_path)
+    return out_path
+
 # -----------------------------
 # 4) Gemini REST (ListModels + fallback)
 # -----------------------------
@@ -255,18 +263,32 @@ def generate_slide_audios(slide_scripts):
 # 6) Slide text & image
 # -----------------------------
 
-def build_slide_scripts(title: str, summary: str):
+def build_slides(title: str, summary: str, pdf_path: str):
     bullets = [s.strip(" -・") for s in summary.split("\n") if s.strip()]
     while len(bullets) < 3:
-        bullets.append("")
+        bullets.append("（要点なし）")
 
-    return [
-        f"本日の論文紹介です。{title}。",
-        f"ポイント1。{bullets[0]}。",
-        f"ポイント2。{bullets[1]}。",
-        f"ポイント3。{bullets[2]}。",
-        "以上で紹介を終わります。"
+    # PDFサムネイル
+    thumb = extract_pdf_thumbnail(pdf_path, "thumbnail.png")
+
+    slides = []
+
+    # 表紙
+    slides.append(
+        create_cover_slide(title, thumb, "slide_00_cover.png")
+    )
+
+    slide_texts = [
+        f"POINT 1\n{bullets[0]}",
+        f"POINT 2\n{bullets[1]}",
+        f"POINT 3\n{bullets[2]}",
+        "END\nありがとうございました",
     ]
+
+    for i, s in enumerate(slide_texts, 1):
+        slides.append(create_slide_image(s, f"slide_{i:02d}.png"))
+
+    return slides
 
 def build_script(title: str, summary: str) -> str:
     # 読み上げ用に軽く整形
@@ -320,6 +342,32 @@ def build_slides(title: str, summary: str):
         slide_files.append(create_slide_image(s, f"slide_{i:02d}.png"))
     return slide_files
 
+def create_cover_slide(title: str, thumbnail_path: str, out_png: str) -> str:
+    W, H = 1920, 1080
+    img = Image.new("RGB", (W, H), "white")
+    draw = ImageDraw.Draw(img)
+
+    title_font = pick_font(64)
+
+    # サムネイル配置
+    thumb = Image.open(thumbnail_path).convert("RGB")
+    thumb.thumbnail((900, 900))
+    img.paste(thumb, (100, 150))
+
+    # タイトル
+    title_wrapped = "\n".join(textwrap.wrap(title, 28))
+    draw.multiline_text(
+        (1050, 300),
+        title_wrapped,
+        fill="black",
+        font=title_font,
+        spacing=12,
+    )
+
+    path = os.path.join(SAVE_DIR, out_png)
+    img.save(path)
+    return path
+
 # -----------------------------
 # 7) Video
 # -----------------------------
@@ -370,7 +418,7 @@ def main():
     print(summary)
 
     # slides + scripts（← 新）
-    slide_files= build_slides(title, summary)
+    slide_files = build_slides(title, summary, pdf_path)
     slide_scripts = build_slide_scripts(title, summary)
 
     # narration per slide（← 新）
